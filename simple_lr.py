@@ -58,10 +58,6 @@ b_orig = y_mean - m_orig * x_mean + b * y_std
 
 print("Gradient Descent (original scale):", m_orig, b_orig)
 
-# Analytical solution for comparison
-m_analytical, b_analytical = np.polyfit(data.x, data.y, 1)
-print("Analytical:", m_analytical, b_analytical)
-
 # Plot
 plt.scatter(data.x, data.y, color="black")
 x_vals = np.linspace(min(data.x), max(data.x), 300)
