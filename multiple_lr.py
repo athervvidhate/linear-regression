@@ -59,3 +59,23 @@ def gradient_descent(X, y, w, b, epochs=1000, alpha=0.01, log_interval=100):
 
     return history, w, b
 
+# Train/test split used for model testing
+def shuffle_dataset(X, y):
+
+    length = np.arange(X.shape[0])
+    np.random.shuffle(length)
+
+    return X[length], y[length]
+
+def train_test_split(X, y, test_size=0.5, shuffle=True):
+    if shuffle:
+        X, y = shuffle_dataset(X, y)
+    if test_size <1 :
+        train_ratio = len(y) - int(len(y) *test_size)
+        X_train, X_test = X[:train_ratio], X[train_ratio:]
+        y_train, y_test = y[:train_ratio], y[train_ratio:]
+        return X_train, X_test, y_train, y_test
+    elif test_size in range(1,len(y)):
+        X_train, X_test = X[test_size:], X[:test_size]
+        y_train, y_test = y[test_size:], y[:test_size]
+        return X_train, X_test, y_train, y_test
