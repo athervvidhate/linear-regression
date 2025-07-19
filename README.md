@@ -1,4 +1,4 @@
-# Multiple Linear Regression Tutorial
+# Multiple Linear Regression from Scratch
 
 A comprehensive Streamlit application that teaches Multiple Linear Regression from scratch using Gradient Descent. This interactive tutorial includes educational content, hands-on demonstrations, and the ability to upload your own datasets.
 
