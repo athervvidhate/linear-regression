@@ -2,13 +2,13 @@ import streamlit as st
 
 # Set page config
 st.set_page_config(
-    page_title="Multiple Linear Regression Tutorial",
+    page_title="Multiple Linear Regression from Scratch",
     page_icon="📊",
     layout="wide"
 )
 
 # Title and introduction
-st.title('Multiple Linear Regression Tutorial')
+st.title('Multiple Linear Regression from Scratch')
 st.markdown("""
 This app demonstrates how to implement **Multiple Linear Regression** from scratch using **Gradient Descent**.
 Learn the mathematics behind the algorithm and see it in action!
@@ -53,6 +53,6 @@ st.markdown("Where $\\alpha$ is the learning rate.")
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: gray;'>
-    <p>Built with ❤️ using Streamlit | Multiple Linear Regression from Scratch</p>
+    <p>Built by <a href='https://atherv.com'> Atherv Vidhate</a> | Multiple Linear Regression from Scratch</p>
 </div>
 """, unsafe_allow_html=True)

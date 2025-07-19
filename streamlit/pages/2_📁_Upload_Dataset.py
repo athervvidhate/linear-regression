@@ -6,10 +6,16 @@ import plotly.graph_objects as go
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from multiple_lr import gradient_descent, predict, normalize_features
+st.set_page_config(
+    page_title="Upload Your Own Dataset",
+    page_icon="📁",
+    layout="wide"
+)
 
-st.header("📁 Upload Your Own Dataset")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from multiple_lr import gradient_descent, predict, normalize_features, train_test_split
+
+st.header("Upload Your Own Dataset")
 
 uploaded_file = st.file_uploader(
     "Choose a CSV file",
@@ -94,19 +100,26 @@ if uploaded_file is not None:
                 y_user = y_user[mask]
                 
                 if len(X_user) > 0:
-                    # Feature scaling
-                    X_user_scaled, mean_x_user, std_x_user = normalize_features(X_user)
-                    y_user_scaled = (y_user - np.mean(y_user)) / (np.std(y_user) + 1e-9)
+                    # Train/test split
+                    X_train_user, X_test_user, y_train_user, y_test_user = train_test_split(X_user, y_user, test_size=0.2)
+                    
+                    # Feature scaling (fit only on train, apply to both)
+                    X_train_scaled_user, mean_x_user, std_x_user = normalize_features(X_train_user)
+                    X_test_scaled_user = (X_test_user - mean_x_user) / (std_x_user + 1e-9)
+                    
+                    y_train_scaled_user = (y_train_user - np.mean(y_train_user)) / (np.std(y_train_user) + 1e-9)
+                    mean_y_train_user = np.mean(y_train_user)
+                    std_y_train_user = np.std(y_train_user)
                     
                     # Initialize weights
-                    w_user = np.random.randn(X_user_scaled.shape[1]) * 0.001
+                    w_user = np.random.randn(X_train_scaled_user.shape[1]) * 0.001
                     b_user = 0
                     
                     # Train model
                     if st.button("🚀 Train Model on Your Data"):
                         with st.spinner("Training in progress..."):
                             history_user, w_final_user, b_final_user = gradient_descent(
-                                X_user_scaled, y_user_scaled, w_user, b_user,
+                                X_train_scaled_user, y_train_scaled_user, w_user, b_user,
                                 epochs=epochs, alpha=learning_rate, log_interval=log_interval
                             )
                         
@@ -123,21 +136,43 @@ if uploaded_file is not None:
                         
                         # Model performance
                         st.subheader("🎯 Model Performance")
-                        y_pred_user_scaled = predict(X_user_scaled, w_final_user, b_final_user)
-                        y_pred_user = y_pred_user_scaled * np.std(y_user) + np.mean(y_user)
+                        # Predict on train and test
+                        y_train_pred_scaled_user = predict(X_train_scaled_user, w_final_user, b_final_user)
+                        y_train_pred_user = y_train_pred_scaled_user * std_y_train_user + mean_y_train_user
+                        y_test_pred_scaled_user = predict(X_test_scaled_user, w_final_user, b_final_user)
+                        y_test_pred_user = y_test_pred_scaled_user * std_y_train_user + mean_y_train_user
                         
                         # Calculate metrics
-                        mse_user = np.mean((y_pred_user - y_user) ** 2)
-                        rmse_user = np.sqrt(mse_user)
-                        mae_user = np.mean(np.abs(y_pred_user - y_user))
+                        mse_train_user = np.mean((y_train_pred_user - y_train_user) ** 2)
+                        rmse_train_user = np.sqrt(mse_train_user)
                         
-                        col1, col2, col3 = st.columns(3)
+                        mse_test_user = np.mean((y_test_pred_user - y_test_user) ** 2)
+                        rmse_test_user = np.sqrt(mse_test_user)
+                        
+                        st.write("#### Training Set Metrics")
+                        col1, col2 = st.columns(2)
                         with col1:
-                            st.metric("Mean Squared Error", f"{mse_user:.2f}")
+                            st.metric("Train MSE", f"{mse_train_user:.2f}")
                         with col2:
-                            st.metric("Root Mean Squared Error", f"{rmse_user:.2f}")
-                        with col3:
-                            st.metric("Mean Absolute Error", f"{mae_user:.2f}")
+                            st.metric("Train RMSE", f"{rmse_train_user:.2f}")
+                        
+                        st.write("#### Test Set Metrics")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.metric("Test MSE", f"{mse_test_user:.2f}")
+                        with col2:
+                            st.metric("Test RMSE", f"{rmse_test_user:.2f}")
+                        
+                        # Calculate improvement over baseline
+                        baseline_rmse_user = np.std(y_test_user)
+                        improvement_percentage_user = ((baseline_rmse_user - rmse_test_user) / baseline_rmse_user) * 100
+                        
+                        if improvement_percentage_user > 5:
+                            st.success(f"🎉 **Great job!** We improved our model by **{improvement_percentage_user:.1f}%** over the baseline (predicting the mean).")
+                        elif improvement_percentage_user > 0:
+                            st.info(f"✅ **Good!** We improved our model by **{improvement_percentage_user:.1f}%** over the baseline.")
+                        else:
+                            st.warning(f"⚠️ **Model needs improvement.** Our model is **{abs(improvement_percentage_user):.1f}%** worse than just predicting the mean.")
                         
                         # Final weights
                         st.subheader("🔧 Final Model Parameters")
@@ -149,25 +184,25 @@ if uploaded_file is not None:
                         st.dataframe(weights_df_user)
                         st.write(f"**Bias (b):** {b_final_user:.6f}")
                         
-                        # Predictions vs Actual plot
-                        st.subheader("📊 Predictions vs Actual Values")
+                        # Predictions vs Actual plot (test set)
+                        st.subheader("📊 Predictions vs Actual Values (Test Set)")
                         
                         # Sample data for visualization
-                        sample_size_user = min(100, len(y_user))
-                        sample_indices_user = np.random.choice(len(y_user), sample_size_user, replace=False)
+                        sample_size_user = min(100, len(y_test_user))
+                        sample_indices_user = np.random.choice(len(y_test_user), sample_size_user, replace=False)
                         
                         fig_pred_user = go.Figure()
                         fig_pred_user.add_trace(go.Scatter(
-                            x=y_user[sample_indices_user],
-                            y=y_pred_user[sample_indices_user],
+                            x=y_test_user[sample_indices_user],
+                            y=y_test_pred_user[sample_indices_user],
                             mode='markers',
                             name='Predictions',
                             marker=dict(color='green', size=8)
                         ))
                         
                         # Perfect prediction line
-                        min_val_user = min(y_user[sample_indices_user].min(), y_pred_user[sample_indices_user].min())
-                        max_val_user = max(y_user[sample_indices_user].max(), y_pred_user[sample_indices_user].max())
+                        min_val_user = min(y_test_user[sample_indices_user].min(), y_test_pred_user[sample_indices_user].min())
+                        max_val_user = max(y_test_user[sample_indices_user].max(), y_test_pred_user[sample_indices_user].max())
                         fig_pred_user.add_trace(go.Scatter(
                             x=[min_val_user, max_val_user],
                             y=[min_val_user, max_val_user],
@@ -177,7 +212,7 @@ if uploaded_file is not None:
                         ))
                         
                         fig_pred_user.update_layout(
-                            title="Predictions vs Actual Values",
+                            title="Predictions vs Actual Values (Test Set)",
                             xaxis_title="Actual Values",
                             yaxis_title="Predicted Values",
                             height=500
@@ -193,3 +228,11 @@ if uploaded_file is not None:
                 
     except Exception as e:
         st.error(f"❌ Error reading file: {str(e)}")
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: gray;'>
+    <p>Built by <a href='https://atherv.com'> Atherv Vidhate</a> | Multiple Linear Regression from Scratch</p>
+</div>
+""", unsafe_allow_html=True)
