@@ -58,7 +58,7 @@ y = df['median_house_value'].to_numpy()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 # Add explanation of train/test split
-with st.expander("What is Train/Test Split and How Does Our Implementation Work?"):
+with st.expander("What is train/test split and how does our implementation work?"):
     st.write("""
     **What is Train/Test Split?**
     
